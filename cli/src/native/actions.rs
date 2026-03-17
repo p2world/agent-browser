@@ -1515,6 +1515,10 @@ async fn handle_snapshot(cmd: &Value, state: &mut DaemonState) -> Result<Value, 
             .get("selector")
             .and_then(|v| v.as_str())
             .map(String::from),
+        ref_id: cmd
+            .get("ref")
+            .and_then(|v| v.as_str())
+            .map(String::from),
         interactive: cmd
             .get("interactive")
             .and_then(|v| v.as_bool())
@@ -2426,11 +2430,16 @@ async fn handle_diff_snapshot(cmd: &Value, state: &mut DaemonState) -> Result<Va
         .get("selector")
         .and_then(|v| v.as_str())
         .map(String::from);
+    let ref_id = cmd
+        .get("ref")
+        .and_then(|v| v.as_str())
+        .map(String::from);
 
     let options = SnapshotOptions {
         compact,
         depth: max_depth,
         selector,
+        ref_id,
         ..SnapshotOptions::default()
     };
     let current = snapshot::take_snapshot(

@@ -549,6 +549,12 @@ pub fn parse_command(args: &[String], flags: &Flags) -> Result<Value, ParseError
                             i += 1;
                         }
                     }
+                    "-r" | "--ref" => {
+                        if let Some(r) = rest.get(i + 1) {
+                            obj.insert("ref".to_string(), json!(r));
+                            i += 1;
+                        }
+                    }
                     _ => {}
                 }
                 i += 1;

@@ -68,6 +68,7 @@ const STRUCTURAL_ROLES: &[&str] = &[
 #[derive(Default)]
 pub struct SnapshotOptions {
     pub selector: Option<String>,
+    pub ref_id: Option<String>,
     pub interactive: bool,
     pub compact: bool,
     pub depth: Option<usize>,
@@ -147,7 +148,7 @@ pub async fn take_snapshot(
         .send_command_no_params("Accessibility.enable", Some(session_id))
         .await?;
 
-    // If a CSS selector is provided, resolve the set of backendNodeIds that
+    // If a CSS selector or ref is provided, resolve the set of backendNodeIds that
     // belong to the DOM subtree rooted at the matched element.  We use this
     // set to pick the right AX subtree root(s) later.
     let selector_backend_ids: Option<std::collections::HashSet<i64>> =
@@ -194,6 +195,41 @@ pub async fn take_snapshot(
                 return Err(format!(
                     "Could not resolve backendNodeId for selector '{}'",
                     selector
+                ));
+            }
+
+            Some(ids)
+        } else if let Some(ref ref_id) = options.ref_id {
+            // Look up the ref in ref_map
+            let ref_entry = ref_map.get(ref_id).ok_or_else(|| {
+                format!("Ref '{}' not found", ref_id)
+            })?;
+
+            let backend_node_id = ref_entry.backend_node_id.ok_or_else(|| {
+                format!("Ref '{}' does not have a backend node id", ref_id)
+            })?;
+
+            // Request the full DOM subtree (depth: -1) so we can collect all
+            // backendNodeIds that live under the matched element.
+            let describe: Value = client
+                .send_command(
+                    "DOM.describeNode",
+                    Some(serde_json::json!({ "backendNodeId": backend_node_id, "depth": -1 })),
+                    Some(session_id),
+                )
+                .await?;
+
+            let root_node = describe
+                .get("node")
+                .ok_or_else(|| format!("Could not resolve DOM node for ref '{}'", ref_id))?;
+
+            let mut ids = std::collections::HashSet::new();
+            collect_backend_node_ids(root_node, &mut ids);
+
+            if ids.is_empty() {
+                return Err(format!(
+                    "Could not resolve backendNodeId for ref '{}'",
+                    ref_id
                 ));
             }
 

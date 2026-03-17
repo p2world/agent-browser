@@ -1453,6 +1453,7 @@ Options:
   -c, --compact        Remove empty structural elements
   -d, --depth <n>      Limit tree depth
   -s, --selector <sel> Scope snapshot to CSS selector
+  -r, --ref <ref>      Scope snapshot to element by ref (e.g., e1, @e1)
 
 Global Options:
   --json               Output as JSON
@@ -1464,6 +1465,7 @@ Examples:
   agent-browser snapshot -i -C         # Interactive + cursor-interactive elements
   agent-browser snapshot --compact --depth 5
   agent-browser snapshot -s "#main-content"
+  agent-browser snapshot -r e1         # Snapshot only element with ref e1
 "##
         }
 
